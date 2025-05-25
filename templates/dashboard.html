@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Predicción</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --sidebar-bg: #1e293b;
+            --sidebar-color: #f8fafc;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            background: var(--sidebar-bg);
+            color: var(--sidebar-color);
+        }
+        
+        .main {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+        }
+        
+        .stat-card {
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .nav-link.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid var(--primary);
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="p-4">
+            <h4 class="text-white"><i class="fas fa-rocket me-2"></i>PredictApp</h4>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active text-white" href="/">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white" href="/predict">
+                    <i class="fas fa-upload me-2"></i>Cargar Datos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white" href="/generate-charts" target="_blank">
+                    <i class="fas fa-chart-bar me-2"></i>Reportes
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main p-4">
+        <div class="container-fluid">
+            <!-- Stats Row -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card p-3 bg-white">
+                        <h5 class="text-muted">C:\Users\PredictController</h5>
+                        <h2 id="accuracy">75%</h2>
+                        <p class="text-muted">Precisión del Modelo</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card p-3 bg-white">
+                        <h5 class="text-muted">Total Estudiantes</h5>
+                        <h2 id="total-students">0</h2>
+                        <p class="text-muted">Analizados</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card p-3 bg-white">
+                        <h5 class="text-muted">Aprobados</h5>
+                        <h2 id="approved">0</h2>
+                        <p class="text-muted" id="approval-rate">0% tasa de aprobación</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="chart-container">
+                        <div id="chart1"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <div id="chart2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Bottom -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="p-3 bg-white rounded">
+                        <h5>Estadísticas Clave</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><strong>A:</strong> <span id="stat-A">10</span> (Study Time)</li>
+                            <li class="mb-2"><strong>B:</strong> <span id="stat-B">15.0</span> (Failures)</li>
+                            <li class="mb-2"><strong>C:</strong> <span id="stat-C">5.0</span> (Absences)</li>
+                            <li class="mb-2"><strong>D:</strong> <span id="stat-D">4.0</span> (G1 Score)</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-white rounded">
+                        <h5>Resumen</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><strong>S:</strong> <span id="stat-S">500</span> (Total Students)</li>
+                            <li class="mb-2"><strong>E:</strong> <span id="stat-E">1,500</span> (Estimated Pass)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/generate-charts')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        // Actualizar gráficos
+                        document.getElementById('chart1').innerHTML = data.chart1;
+                        document.getElementById('chart2').innerHTML = data.chart2;
+                        
+                        // Actualizar estadísticas
+                        document.getElementById('stat-A').textContent = data.stats.A;
+                        document.getElementById('stat-B').textContent = data.stats.B;
+                        document.getElementById('stat-C').textContent = data.stats.C;
+                        document.getElementById('stat-D').textContent = data.stats.D;
+                        document.getElementById('stat-S').textContent = data.stats.S;
+                        document.getElementById('stat-E').textContent = data.stats.E;
+                        
+                        // Actualizar resumen
+                        document.getElementById('total-students').textContent = data.stats.S;
+                        document.getElementById('approved').textContent = data.stats.E;
+                        const approvalRate = ((data.stats.E / data.stats.S) * 100).toFixed(1);
+                        document.getElementById('approval-rate').textContent = `${approvalRate}% tasa de aprobación`;
+                    }
+                });
+        });
+    </script>
+</body>
+</html>

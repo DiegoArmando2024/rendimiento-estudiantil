@@ -2,24 +2,358 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Predicción de Rendimiento</title>
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/cosmo/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Predicción Académica</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Estilos personalizados -->
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #1cc88a;
+            --dark-color: #5a5c69;
+            --light-color: #f8f9fc;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+        
+        .card-main {
+            border-radius: 15px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            border: none;
+            transition: transform 0.3s;
+        }
+        
+        .card-main:hover {
+            transform: translateY(-5px);
+        }
+        
+        .nav-tabs .nav-link.active {
+            font-weight: 600;
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        .upload-area {
+            border: 2px dashed #d1d3e2;
+            border-radius: 10px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(78, 115, 223, 0.05);
+        }
+        
+        .result-chart {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
-<body class="container mt-5">
-
-    <h2 class="mb-4">Sube un archivo Excel para predecir rendimiento estudiantil</h2>
-
-    {% if error %}
-        <div class="alert alert-danger">{{ error }}</div>
-    {% endif %}
-
-    <form method="post" enctype="multipart/form-data" class="mb-4">
-        <div class="mb-3">
-            <input type="file" name="file" accept=".xlsx" class="form-control" required>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card card-main">
+                    <div class="card-header bg-white">
+                        <ul class="nav nav-tabs card-header-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#dashboard-tab">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#predict-tab">
+                                    <i class="fas fa-upload me-2"></i>Cargar Datos
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <!-- Pestaña del Dashboard -->
+                            <div class="tab-pane fade show active" id="dashboard-tab">
+                                <h4 class="mb-4"><i class="fas fa-chart-pie me-2"></i>Resultados de Predicción</h4>
+                                
+                                <div class="row mb-4">
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center">
+                                                <h5 class="text-muted">Precisión del Modelo</h5>
+                                                <h2>75%</h2>
+                                                <p class="text-muted small">C:\Users\PredictController</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center">
+                                                <h5 class="text-muted">Estudiantes Analizados</h5>
+                                                <h2 id="total-students">0</h2>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center">
+                                                <h5 class="text-muted">Aprobados</h5>
+                                                <h2 id="approved-count">0</h2>
+                                                <p class="text-muted small" id="approval-rate">0% tasa</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="result-chart mb-4" id="result-chart">
+                                    <!-- Aquí se cargará el gráfico de resultados -->
+                                    <div class="text-center py-5">
+                                        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                                        <p>Suba un archivo para ver los resultados</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5><i class="fas fa-list-ol me-2"></i>Estadísticas Clave</h5>
+                                        <ul class="list-group">
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>A: Study Time</span>
+                                                <span id="stat-a">0.0</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>B: Failures</span>
+                                                <span id="stat-b">0.0</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>C: Absences</span>
+                                                <span id="stat-c">0.0</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>D: G1 Score</span>
+                                                <span id="stat-d">0.0</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5><i class="fas fa-info-circle me-2"></i>Resumen</h5>
+                                        <ul class="list-group">
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>S: Total Estudiantes</span>
+                                                <span id="stat-s">0</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>E: Aprobados</span>
+                                                <span id="stat-e">0</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Pestaña de Carga de Datos -->
+                            <div class="tab-pane fade" id="predict-tab">
+                                <h4 class="mb-4"><i class="fas fa-upload me-2"></i>Cargar Datos Estudiantiles</h4>
+                                
+                                {% if error %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                                {% endif %}
+                                
+                                <form id="uploadForm" enctype="multipart/form-data">
+                                    <div class="upload-area mb-3" id="dropArea">
+                                        <i class="fas fa-file-excel fa-3x mb-3" style="color: var(--primary-color);"></i>
+                                        <h5>Arrastra tu archivo Excel aquí</h5>
+                                        <p class="text-muted">o</p>
+                                        <input type="file" name="file" id="fileInput" accept=".xlsx" class="d-none">
+                                        <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                            Seleccionar Archivo
+                                        </button>
+                                        <p class="mt-2 small text-muted" id="fileName">Ningún archivo seleccionado</p>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                                            <i class="fas fa-chart-line me-2"></i>Generar Predicciones
+                                        </button>
+                                    </div>
+                                </form>
+                                
+                                <div class="alert alert-info mt-4">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Asegúrate de que tu archivo contenga las columnas: <code>studytime</code>, <code>failures</code>, 
+                                    <code>absences</code>, <code>G1</code> y <code>G2</code>.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <button type="submit" class="btn btn-primary">Subir y Predecir</button>
-    </form>
+    </div>
 
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Plotly para gráficos -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Custom JS -->
+    <script>
+        // Manejar arrastrar y soltar
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        
+        // Eventos para arrastrar y soltar
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('border-primary', 'bg-light');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('border-primary', 'bg-light');
+        }
+        
+        // Manejar archivos soltados
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+        
+        // Manejar selección de archivo
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+        
+        function handleFiles(files) {
+            if (files.length && files[0].name.endsWith('.xlsx')) {
+                fileName.textContent = `Archivo seleccionado: ${files[0].name}`;
+                submitBtn.disabled = false;
+            } else {
+                fileName.textContent = 'Por favor selecciona un archivo Excel (.xlsx)';
+                submitBtn.disabled = true;
+            }
+        }
+        
+        // Enviar formulario
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!fileInput.files.length) {
+                alert('Por favor selecciona un archivo primero');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+            submitBtn.disabled = true;
+            
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // Actualizar la interfaz con los resultados
+                    updateDashboard(data);
+                    // Cambiar a la pestaña de dashboard
+                    const tab = new bootstrap.Tab(document.querySelector('[data-bs-toggle="tab"][href="#dashboard-tab"]'));
+                    tab.show();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al procesar el archivo');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = '<i class="fas fa-chart-line me-2"></i>Generar Predicciones';
+                submitBtn.disabled = false;
+            });
+        });
+        
+        // Función para actualizar el dashboard con los resultados
+        function updateDashboard(data) {
+            document.getElementById('total-students').textContent = data.total;
+            document.getElementById('approved-count').textContent = data.aprobados;
+            document.getElementById('approval-rate').textContent = 
+                `${((data.aprobados/data.total)*100).toFixed(1)}% tasa de aprobación`;
+            
+            // Actualizar estadísticas
+            document.getElementById('stat-a').textContent = data.stats.studytime.toFixed(1);
+            document.getElementById('stat-b').textContent = data.stats.failures.toFixed(1);
+            document.getElementById('stat-c').textContent = data.stats.absences.toFixed(1);
+            document.getElementById('stat-d').textContent = data.stats.G1.toFixed(1);
+            document.getElementById('stat-s').textContent = data.total;
+            document.getElementById('stat-e').textContent = data.aprobados;
+            
+            // Crear gráfico de resultados
+            createResultChart(data);
+        }
+        
+        // Función para crear el gráfico de resultados
+        function createResultChart(data) {
+            const chartData = [{
+                values: [data.aprobados, data.no_aprobados],
+                labels: ['Aprobados', 'No Aprobados'],
+                type: 'pie',
+                marker: {
+                    colors: ['#10B981', '#EF4444']
+                }
+            }];
+            
+            const layout = {
+                title: 'Distribución de Resultados',
+                height: 300
+            };
+            
+            Plotly.newPlot('result-chart', chartData, layout);
+        }
+        
+        // Cargar datos iniciales si existen
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/get-results')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && !data.error) {
+                        updateDashboard(data);
+                    }
+                });
+        });
+    </script>
 </body>
 </html>
